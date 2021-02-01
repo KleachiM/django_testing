@@ -31,6 +31,7 @@ def test_filter_id(api_client, course_factory):
     resp = api_client.get(url, data={'id': f'{courses[0].id}'})
     assert resp.status_code == HTTP_200_OK
     resp_json = resp.json()
+    assert len(resp_json) == 1
     assert courses[0].id == resp_json[0]['id']
 
 
@@ -41,6 +42,7 @@ def test_filter_name(api_client, course_factory):
     resp = api_client.get(url, data={'name': f'{courses[0].name}'})
     assert resp.status_code == HTTP_200_OK
     resp_data = resp.data
+    assert len(resp_data) == 1
     assert courses[0].name == resp_data[0]['name']
 
 
@@ -50,6 +52,9 @@ def test_course_create(api_client):
     url = reverse("courses-list")
     resp = api_client.post(url, data=course)
     assert resp.status_code == HTTP_201_CREATED
+    resp = api_client.get(url, data={'name': f'{course["name"]}'})
+    resp_json = resp.json()
+    assert resp_json[0]['name'] == course['name']
 
 
 @pytest.mark.django_db
@@ -60,10 +65,20 @@ def test_course_update(api_client):
     url = reverse("courses-list")
     resp = api_client.post(url, data=course)
     assert resp.status_code == HTTP_201_CREATED
+
+    resp_get = api_client.get(url, data={'name': f'{course["name"]}'})
+    resp_get_json = resp_get.json()
+    assert resp_get_json[0]['name'] == course['name']
+
     resp_json = resp.json()
     url_upd = reverse("courses-detail", args=(resp_json["id"], ))
     resp_upd = api_client.patch(url_upd, data=course_update)
     assert resp_upd.status_code == HTTP_200_OK
+
+    resp_get = api_client.get(url, data={'name': f'{course_update["name"]}'})
+    resp_get_json = resp_get.json()
+    assert resp_get_json[0]['name'] == course_update['name']
+
 
 @pytest.mark.django_db
 def test_curse_delete(api_client):
@@ -71,7 +86,18 @@ def test_curse_delete(api_client):
     url = reverse("courses-list")
     resp = api_client.post(url, data=course)
     assert resp.status_code == HTTP_201_CREATED
+
+    url_get = reverse("courses-list")
+    resp_get = api_client.get(url_get, data={'name': f'{course["name"]}'})
+    resp_get_json = resp_get.json()
+    assert resp_get_json[0]['name'] == course['name']
+
     resp_json = resp.json()
     url_to_del = reverse("courses-detail", args=(resp_json["id"], ))
     resp_del = api_client.delete(url_to_del)
     assert resp_del.status_code == HTTP_204_NO_CONTENT
+
+    url_get = reverse("courses-list")
+    resp_get = api_client.get(url_get, data={'name': f'{course["name"]}'})
+    resp_get_json = resp_get.json()
+    assert len(resp_get_json) == 0
